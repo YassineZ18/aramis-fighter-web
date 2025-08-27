@@ -30,42 +30,52 @@ export default function LoginPage({ onLogin }) {
     e.preventDefault();
     setLoading(true);
     setError(null);
-    const { error, data } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-    setLoading(false);
-    if (error) {
-      setError(error.message);
-    } else {
-      // Utiliser uniquement les profils locaux - pas d'appel à Supabase profiles
-      const userId = data.user.id;
-      
-      // Vérifier s'il y a des données en attente d'inscription (chiffrées)
-      const pendingProfile = getSecureItem('pendingProfile');
-      if (pendingProfile && pendingProfile.nom && pendingProfile.prenom && pendingProfile.club_id && pendingProfile.type) {
-        // Créer le profil local avec les données d'inscription
-        const localProfile = {
-          id: userId,
-          nom: validateAndSanitize.text(pendingProfile.nom),
-          prenom: validateAndSanitize.text(pendingProfile.prenom),
-          club_id: pendingProfile.club_id,
-          type: pendingProfile.type,
-          is_admin_validated: false
-        };
-        
-        // Créer une session sécurisée
-        createSecureSession(userId, localProfile);
-        removeSecureItem('pendingProfile');
-      } else {
-        // Créer une session même sans profil complet
-        createSecureSession(userId, { id: userId });
+    try {
+      if (!supabase) {
+        // Mode local sans Supabase
+        console.log('Mode local: connexion simulée');
+        onLogin();
+        return;
       }
       
-      onLogin && onLogin(data?.user);
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+      setLoading(false);
+      if (error) {
+        setError(error.message);
+      } else {
+        // Utiliser uniquement les profils locaux - pas d'appel à Supabase profiles
+        const userId = data.user.id;
+        
+        // Vérifier s'il y a des données en attente d'inscription (chiffrées)
+        const pendingProfile = getSecureItem('pendingProfile');
+        if (pendingProfile && pendingProfile.nom && pendingProfile.prenom && pendingProfile.club_id && pendingProfile.type) {
+          // Créer le profil local avec les données d'inscription
+          const localProfile = {
+            id: userId,
+            nom: validateAndSanitize.text(pendingProfile.nom),
+            prenom: validateAndSanitize.text(pendingProfile.prenom),
+            club_id: pendingProfile.club_id,
+            type: pendingProfile.type,
+            is_admin_validated: false
+          };
+          
+          // Créer une session sécurisée
+          createSecureSession(userId, localProfile);
+          removeSecureItem('pendingProfile');
+        } else {
+          // Créer une session même sans profil complet
+          createSecureSession(userId, { id: userId });
+        }
+        
+        onLogin && onLogin(data?.user);
+      }
+    } catch (error) {
+      console.error('Erreur de connexion:', error);
     }
   };
-
 
   const handleSignup = async (e) => {
     e.preventDefault();
@@ -95,24 +105,33 @@ export default function LoginPage({ onLogin }) {
       return;
     }
     
-    const { data, error } = await supabase.auth.signUp({
-      email: signupEmail,
-      password: signupPassword,
-    });
-    setSignupLoading(false);
-    if (error) {
-      // Gestion de l'erreur email déjà utilisé (code 400 ou message spécifique)
-      if (error.message && error.message.toLowerCase().includes('already registered')) {
-        setSignupError("Cet email est déjà utilisé. Veuillez vous connecter ou utiliser un autre email.");
-      } else {
-        setSignupError(error.message);
+    try {
+      if (!supabase) {
+        // Mode local sans Supabase
+        console.log('Mode local: inscription simulée');
+        onLogin();
+        return;
       }
-      return;
+      
+      const { data, error } = await supabase.auth.signUp({
+        email: signupEmail,
+        password: signupPassword,
+      });
+      
+      setSignupLoading(false);
+      if (error) {
+        setSignupError(error.message);
+      } else {
+        // Inscription réussie - la configuration du profil se fera après la première connexion
+        setSignupSuccess(true);
+        setSignupEmail('');
+        setSignupPassword('');
+      }
+    } catch (error) {
+      console.error('Erreur d\'inscription:', error);
+      setSignupError('Erreur lors de l\'inscription');
+      setSignupLoading(false);
     }
-    // Inscription réussie - la configuration du profil se fera après la première connexion
-    setSignupSuccess(true);
-    setSignupEmail('');
-    setSignupPassword('');
   };
 
   const handleForgot = async (e) => {
