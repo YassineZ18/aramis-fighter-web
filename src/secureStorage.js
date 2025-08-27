@@ -1,5 +1,5 @@
 // Utilitaire de stockage sécurisé avec chiffrement
-import CryptoJS from 'crypto-js';
+import * as CryptoJS from 'crypto-js';
 
 // Clé de chiffrement dérivée de l'ID utilisateur et d'un salt
 const getEncryptionKey = (userId) => {

@@ -7,9 +7,15 @@ export default defineConfig({
   define: {
     global: 'globalThis',
   },
-  resolve: {
-    alias: {
-      crypto: 'crypto-js'
+  optimizeDeps: {
+    include: ['crypto-js']
+  },
+  build: {
+    rollupOptions: {
+      external: [],
+      output: {
+        globals: {}
+      }
     }
   }
 })
