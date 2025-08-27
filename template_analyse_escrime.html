@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Template Analyse Escrime - Graphiques Excel</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f8fafc;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #e2e8f0;
+        }
+        .header h1 {
+            color: #8b5cf6;
+            font-size: 28px;
+            margin: 0;
+            font-weight: 700;
+        }
+        .header p {
+            color: #64748b;
+            margin: 10px 0 0 0;
+            font-style: italic;
+        }
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        .chart-container {
+            background: #fafafa;
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 20px;
+        }
+        .chart-title {
+            font-size: 18px;
+            font-weight: 700;
+            color: #1e293b;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        .data-table th, .data-table td {
+            border: 1px solid #e2e8f0;
+            padding: 8px 12px;
+            text-align: left;
+        }
+        .data-table th {
+            background-color: #8b5cf6;
+            color: white;
+            font-weight: 600;
+        }
+        .data-table tr:nth-child(even) {
+            background-color: #f8fafc;
+        }
+        .instructions {
+            background: #f0fdf4;
+            border: 2px solid #16a34a;
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 30px;
+        }
+        .instructions h3 {
+            color: #16a34a;
+            margin-top: 0;
+        }
+        .instructions ol {
+            color: #15803d;
+        }
+        .instructions li {
+            margin-bottom: 8px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📊 TEMPLATE ANALYSE ESCRIME</h1>
+            <p>Graphiques automatiques pour données exportées depuis Aramis Fighter</p>
+            <p><strong>Escrimeur :</strong> <span id="fencerName">[NOM_ESCRIMEUR]</span></p>
+        </div>
+
+        <div class="stats-grid">
+            <!-- Graphique Actions -->
+            <div class="chart-container">
+                <div class="chart-title">🥧 Répartition des Actions</div>
+                <canvas id="actionsChart" width="400" height="300"></canvas>
+            </div>
+
+            <!-- Graphique Efficacité -->
+            <div class="chart-container">
+                <div class="chart-title">📈 Efficacité par Action</div>
+                <canvas id="efficiencyChart" width="400" height="300"></canvas>
+            </div>
+
+            <!-- Graphique Zones -->
+            <div class="chart-container">
+                <div class="chart-title">🏟️ Analyse par Zones</div>
+                <canvas id="zonesChart" width="400" height="300"></canvas>
+            </div>
+
+            <!-- Graphique Évolution */
+            <div class="chart-container">
+                <div class="chart-title">📊 Évolution des Performances</div>
+                <canvas id="evolutionChart" width="400" height="300"></canvas>
+            </div>
+        </div>
+
+        <!-- Tableau de données -->
+        <table class="data-table" id="dataTable">
+            <thead>
+                <tr>
+                    <th>Action</th>
+                    <th>Code</th>
+                    <th>Touches Données</th>
+                    <th>Touches Reçues</th>
+                    <th>Efficacité %</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Données seront insérées ici -->
+            </tbody>
+        </table>
+
+        <div class="instructions">
+            <h3>📋 Instructions d'utilisation :</h3>
+            <ol>
+                <li><strong>Exporter depuis Aramis Fighter :</strong> Utilisez le bouton "📈 EXPORT EXCEL" dans MY STATS</li>
+                <li><strong>Ouvrir le fichier CSV :</strong> Dans Excel, ouvrir le fichier exporté</li>
+                <li><strong>Copier les données :</strong> Sélectionner et copier les données d'actions</li>
+                <li><strong>Coller dans ce template :</strong> Remplacer les données d'exemple</li>
+                <li><strong>Graphiques automatiques :</strong> Les graphiques se mettent à jour automatiquement</li>
+                <li><strong>Personnaliser :</strong> Modifier les couleurs et styles selon vos préférences</li>
+            </ol>
+        </div>
+    </div>
+
+    <script>
+        // Données d'exemple - À remplacer par les vraies données
+        const sampleData = {
+            actions: {
+                'AS': { given: 8, received: 2, name: 'Attaque Simple' },
+                'AC': { given: 5, received: 3, name: 'Attaque Composée' },
+                'PR': { given: 6, received: 1, name: 'Parade-Riposte' },
+                'CA': { given: 3, received: 4, name: 'Contre-Attaque' },
+                'AF': { given: 4, received: 2, name: 'Attaque avec Fer' }
+            },
+            zones: {
+                given: { 1: 3, 2: 5, 3: 4, 4: 6, 5: 3, 6: 2 },
+                received: { 1: 1, 2: 2, 3: 1, 4: 3, 5: 2, 6: 1 }
+            }
+        };
+
+        // Graphique circulaire des actions
+        function createActionsChart() {
+            const ctx = document.getElementById('actionsChart').getContext('2d');
+            const actions = Object.entries(sampleData.actions);
+            
+            new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: actions.map(([code, data]) => `${code} (${data.given})`),
+                    datasets: [{
+                        data: actions.map(([code, data]) => data.given),
+                        backgroundColor: [
+                            '#8b5cf6', '#06b6d4', '#10b981', 
+                            '#f59e0b', '#ef4444', '#6366f1'
+                        ],
+                        borderWidth: 2,
+                        borderColor: '#ffffff'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        }
+                    }
+                }
+            });
+        }
+
+        // Graphique d'efficacité
+        function createEfficiencyChart() {
+            const ctx = document.getElementById('efficiencyChart').getContext('2d');
+            const actions = Object.entries(sampleData.actions);
+            
+            const efficiencyData = actions.map(([code, data]) => {
+                return data.received > 0 
+                    ? Math.round((data.given / (data.given + data.received)) * 100)
+                    : 100;
+            });
+
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: actions.map(([code]) => code),
+                    datasets: [{
+                        label: 'Efficacité %',
+                        data: efficiencyData,
+                        backgroundColor: efficiencyData.map(eff => 
+                            eff >= 70 ? '#16a34a' : eff >= 50 ? '#eab308' : '#dc2626'
+                        ),
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 100,
+                            ticks: {
+                                callback: function(value) {
+                                    return value + '%';
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Graphique des zones
+        function createZonesChart() {
+            const ctx = document.getElementById('zonesChart').getContext('2d');
+            
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['Zone 1', 'Zone 2', 'Zone 3', 'Zone 4', 'Zone 5', 'Zone 6'],
+                    datasets: [{
+                        label: 'Touches Données',
+                        data: Object.values(sampleData.zones.given),
+                        backgroundColor: '#16a34a',
+                        borderWidth: 1
+                    }, {
+                        label: 'Touches Reçues',
+                        data: Object.values(sampleData.zones.received),
+                        backgroundColor: '#dc2626',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+        }
+
+        // Graphique d'évolution (exemple)
+        function createEvolutionChart() {
+            const ctx = document.getElementById('evolutionChart').getContext('2d');
+            
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: ['Match 1', 'Match 2', 'Match 3', 'Match 4', 'Match 5'],
+                    datasets: [{
+                        label: 'Efficacité %',
+                        data: [65, 72, 68, 75, 78],
+                        borderColor: '#8b5cf6',
+                        backgroundColor: 'rgba(139, 92, 246, 0.1)',
+                        tension: 0.4,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 100
+                        }
+                    }
+                }
+            });
+        }
+
+        // Remplir le tableau
+        function fillDataTable() {
+            const tbody = document.querySelector('#dataTable tbody');
+            Object.entries(sampleData.actions).forEach(([code, data]) => {
+                const efficiency = data.received > 0 
+                    ? Math.round((data.given / (data.given + data.received)) * 100)
+                    : 100;
+                
+                const row = tbody.insertRow();
+                row.innerHTML = `
+                    <td>${data.name}</td>
+                    <td>${code}</td>
+                    <td>${data.given}</td>
+                    <td>${data.received}</td>
+                    <td style="color: ${efficiency >= 70 ? '#16a34a' : efficiency >= 50 ? '#eab308' : '#dc2626'}">${efficiency}%</td>
+                `;
+            });
+        }
+
+        // Initialiser tous les graphiques
+        document.addEventListener('DOMContentLoaded', function() {
+            createActionsChart();
+            createEfficiencyChart();
+            createZonesChart();
+            createEvolutionChart();
+            fillDataTable();
+        });
+    </script>
+</body>
+</html>

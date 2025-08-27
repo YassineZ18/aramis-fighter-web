@@ -1,0 +1,164 @@
+{
+  "matchId": "test_001",
+  "date": "2025-08-19",
+  "time": "22:15:00",
+  "fencer1": "Jean Dupont",
+  "fencer2": "Marie Martin", 
+  "score1": 15,
+  "score2": 12,
+  "duration": "8:45",
+  "venue": "Salle Aramis",
+  "weapon": "épée",
+  "touchHistory": [
+    {
+      "touchNumber": 1,
+      "fencer": "Jean Dupont",
+      "action": "ATT_D",
+      "actionName": "Attaque Directe",
+      "zone": "Torse",
+      "validity": "Valide",
+      "timestamp": "00:15",
+      "score": [1, 0]
+    },
+    {
+      "touchNumber": 2,
+      "fencer": "Marie Martin",
+      "action": "RIP_D", 
+      "actionName": "Riposte Directe",
+      "zone": "Bras",
+      "validity": "Valide",
+      "timestamp": "00:42",
+      "score": [1, 1]
+    },
+    {
+      "touchNumber": 3,
+      "fencer": "Jean Dupont",
+      "action": "ATT_C",
+      "actionName": "Attaque Composée",
+      "zone": "Torse",
+      "validity": "Valide", 
+      "timestamp": "01:18",
+      "score": [2, 1]
+    },
+    {
+      "touchNumber": 4,
+      "fencer": "Marie Martin",
+      "action": "PAR_RIP",
+      "actionName": "Parade-Riposte",
+      "zone": "Torse",
+      "validity": "Valide",
+      "timestamp": "01:55",
+      "score": [2, 2]
+    },
+    {
+      "touchNumber": 5,
+      "fencer": "Jean Dupont",
+      "action": "CTR_ATT",
+      "actionName": "Contre-Attaque",
+      "zone": "Bras",
+      "validity": "Valide",
+      "timestamp": "02:33",
+      "score": [3, 2]
+    },
+    {
+      "touchNumber": 6,
+      "fencer": "Marie Martin",
+      "action": "ATT_D",
+      "actionName": "Attaque Directe",
+      "zone": "Jambe",
+      "validity": "Valide",
+      "timestamp": "03:12",
+      "score": [3, 3]
+    },
+    {
+      "touchNumber": 7,
+      "fencer": "Jean Dupont",
+      "action": "REMISE",
+      "actionName": "Remise",
+      "zone": "Torse",
+      "validity": "Valide",
+      "timestamp": "03:48",
+      "score": [4, 3]
+    },
+    {
+      "touchNumber": 8,
+      "fencer": "Marie Martin",
+      "action": "RIP_C",
+      "actionName": "Riposte Composée",
+      "zone": "Torse",
+      "validity": "Valide",
+      "timestamp": "04:25",
+      "score": [4, 4]
+    },
+    {
+      "touchNumber": 9,
+      "fencer": "Jean Dupont",
+      "action": "ATT_D",
+      "actionName": "Attaque Directe",
+      "zone": "Torse",
+      "validity": "Valide",
+      "timestamp": "05:02",
+      "score": [5, 4]
+    },
+    {
+      "touchNumber": 10,
+      "fencer": "Marie Martin",
+      "action": "ATT_C",
+      "actionName": "Attaque Composée",
+      "zone": "Bras",
+      "validity": "Valide",
+      "timestamp": "05:39",
+      "score": [5, 5]
+    },
+    {
+      "touchNumber": 11,
+      "fencer": "Jean Dupont",
+      "action": "PAR_RIP",
+      "actionName": "Parade-Riposte",
+      "zone": "Torse",
+      "validity": "Valide",
+      "timestamp": "06:15",
+      "score": [6, 5]
+    },
+    {
+      "touchNumber": 12,
+      "fencer": "Marie Martin",
+      "action": "REPRISE",
+      "actionName": "Reprise",
+      "zone": "Jambe",
+      "validity": "Valide",
+      "timestamp": "06:52",
+      "score": [6, 6]
+    },
+    {
+      "touchNumber": 13,
+      "fencer": "Jean Dupont",
+      "action": "ATT_D",
+      "actionName": "Attaque Directe",
+      "zone": "Torse",
+      "validity": "Valide",
+      "timestamp": "07:28",
+      "score": [7, 6]
+    },
+    {
+      "touchNumber": 14,
+      "fencer": "Marie Martin",
+      "action": "CTR_ATT",
+      "actionName": "Contre-Attaque",
+      "zone": "Bras",
+      "validity": "Valide",
+      "timestamp": "08:05",
+      "score": [7, 7]
+    },
+    {
+      "touchNumber": 15,
+      "fencer": "Jean Dupont",
+      "action": "RIP_D",
+      "actionName": "Riposte Directe",
+      "zone": "Torse",
+      "validity": "Valide",
+      "timestamp": "08:42",
+      "score": [8, 7]
+    }
+  ]
+}
