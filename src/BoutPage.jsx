@@ -129,7 +129,39 @@ export default function BoutPage({ onBack }) {
     setShowDoubleTouchDetail(true);
   };
 
+  // Fonction pour normaliser les zones selon la piste absolue
+  const normalizeZoneToAbsolute = (zone, fencerColor) => {
+    // Pour le joueur rouge (côté gauche de la piste), zones 1-3 = zones 1-3 absolues
+    // Pour le joueur vert (côté droit de la piste), zones 1-3 = zones 4-6 absolues
+    if (fencerColor === 'red') {
+      return zone; // Zones 1-6 restent 1-6
+    } else {
+      // Pour le joueur vert, inverser les zones
+      return 7 - zone; // Zone 1 devient 6, zone 2 devient 5, etc.
+    }
+  };
+
   const handleTouchValidated = (touchData) => {
+    // Normaliser la zone selon la position absolue sur la piste
+    const absoluteZone = normalizeZoneToAbsolute(touchData.zone, touchData.fencer);
+    
+    // Créer une nouvelle touche avec toutes les informations nécessaires
+    const newTouch = {
+      id: Date.now(),
+      timestamp: new Date().toISOString(),
+      fencer: touchData.fencerName, // CORRECTION: Utiliser le nom de l'escrimeur, pas la couleur
+      color: touchData.fencer, // Garder la couleur pour référence
+      zone: absoluteZone, // Utiliser la zone normalisée
+      originalZone: touchData.zone, // Garder la zone relative pour référence
+      action: touchData.actionDetail, // CORRECTION: Utiliser actionDetail pour le mapping
+      actionType: touchData.actionType,
+      actionDetail: touchData.actionDetail,
+      scoreAfter: {
+        red: touchData.fencer === 'red' ? redScore + 1 : redScore,
+        green: touchData.fencer === 'green' ? greenScore + 1 : greenScore
+      }
+    };
+    
     // Incrémenter le score selon la couleur de l'escrimeur
     let newRedScore = redScore;
     let newGreenScore = greenScore;
@@ -143,23 +175,7 @@ export default function BoutPage({ onBack }) {
     }
     
     // Enregistrer la touche dans l'historique
-    const touchRecord = {
-      id: Date.now(),
-      timestamp: new Date().toISOString(),
-      fencer: touchData.fencerName, // CORRECTION: Utiliser le nom de l'escrimeur, pas la couleur
-      color: touchData.fencer, // Garder la couleur pour référence
-      zone: touchData.zone,
-      action: touchData.actionDetail, // CORRECTION: Utiliser actionDetail pour le mapping
-      actionType: touchData.actionType,
-      actionDetail: touchData.actionDetail,
-      scoreAfter: {
-        red: newRedScore,
-        green: newGreenScore
-      },
-      type: 'single'
-    };
-    
-    setTouchHistory(prev => [...prev, touchRecord]);
+    setTouchHistory(prev => [...prev, newTouch]);
     
     // Retourner à la page d'arbitrage
     setShowTouchDetail(false);
@@ -169,49 +185,52 @@ export default function BoutPage({ onBack }) {
   };
 
   const handleDoubleTouchValidated = (doubleTouchData) => {
-    // Incrémenter les deux scores
-    const newRedScore = redScore + 1;
-    const newGreenScore = greenScore + 1;
-    setRedScore(newRedScore);
-    setGreenScore(newGreenScore);
-    
-    // Enregistrer les deux touches dans l'historique
     const timestamp = new Date().toISOString();
-    const baseId = Date.now();
     
-    const redTouchRecord = {
-      id: baseId,
+    // Normaliser les zones pour les deux joueurs
+    const redAbsoluteZone = normalizeZoneToAbsolute(doubleTouchData.red.zone, 'red');
+    const greenAbsoluteZone = normalizeZoneToAbsolute(doubleTouchData.green.zone, 'green');
+    
+    // Créer les deux touches
+    const redTouch = {
+      id: Date.now(),
       timestamp: timestamp,
       fencer: 'red',
       fencerName: doubleTouchData.red.fencerName,
-      zone: doubleTouchData.red.zone,
+      zone: redAbsoluteZone,
+      originalZone: doubleTouchData.red.zone,
       actionType: doubleTouchData.red.actionType,
       actionDetail: doubleTouchData.red.actionDetail,
       scoreAfter: {
-        red: newRedScore,
-        green: newGreenScore
+        red: redScore + 1,
+        green: greenScore + 1
       },
       type: 'double',
       doublePartner: 'green'
     };
     
-    const greenTouchRecord = {
-      id: baseId + 1,
+    const greenTouch = {
+      id: Date.now() + 1,
       timestamp: timestamp,
       fencer: 'green',
       fencerName: doubleTouchData.green.fencerName,
-      zone: doubleTouchData.green.zone,
+      zone: greenAbsoluteZone,
+      originalZone: doubleTouchData.green.zone,
       actionType: doubleTouchData.green.actionType,
       actionDetail: doubleTouchData.green.actionDetail,
       scoreAfter: {
-        red: newRedScore,
-        green: newGreenScore
+        red: redScore + 1,
+        green: greenScore + 1
       },
       type: 'double',
       doublePartner: 'red'
     };
     
-    setTouchHistory(prev => [...prev, redTouchRecord, greenTouchRecord]);
+    // Incrémenter les scores pour les deux joueurs
+    setRedScore(redScore + 1);
+    setGreenScore(greenScore + 1);
+    
+    setTouchHistory(prev => [...prev, redTouch, greenTouch]);
     
     // Retourner à la page d'arbitrage
     setShowDoubleTouchDetail(false);

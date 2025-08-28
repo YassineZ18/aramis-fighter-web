@@ -490,83 +490,6 @@ const MyStatsPage = ({ onBack }) => {
     );
   };
 
-  const renderZoneChart = (zoneDistribution, totalGiven) => {
-    if (totalGiven === 0) return null;
-
-    const zones = ['Zone 1', 'Zone 2', 'Zone 3', 'Zone 4', 'Zone 5', 'Zone 6'];
-    const maxCount = Math.max(...Object.values(zoneDistribution));
-
-    return (
-      <div style={{
-        backgroundColor: 'white',
-        borderRadius: '12px',
-        padding: '30px',
-        border: '2px solid #e2e8f0',
-        marginBottom: '40px'
-      }}>
-        <h3 style={{
-          fontSize: '24px',
-          fontWeight: '700',
-          color: '#1e293b',
-          marginBottom: '30px',
-          textAlign: 'center'
-        }}>
-          🎯 Répartition par Zones du Terrain
-        </h3>
-        
-        <div style={{
-          display: 'flex',
-          alignItems: 'end',
-          justifyContent: 'space-around',
-          height: '350px',
-          gap: '20px',
-          padding: '0 30px'
-        }}>
-          {zones.map((zone, index) => {
-            const zoneKey = `zone${index + 1}`;
-            const count = zoneDistribution[zoneKey] || 0;
-            const percentage = totalGiven > 0 ? Math.round((count / totalGiven) * 100) : 0;
-            const height = maxCount > 0 ? (count / maxCount) * 280 : 0;
-            
-            return (
-              <div key={zone} style={{
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                flex: 1
-              }}>
-                <div style={{
-                  fontSize: '16px',
-                  fontWeight: '700',
-                  color: '#64748b',
-                  marginBottom: '12px'
-                }}>
-                  {count} ({percentage}%)
-                </div>
-                <div style={{
-                  width: '100%',
-                  height: `${height}px`,
-                  backgroundColor: '#22c55e',
-                  borderRadius: '8px 8px 0 0',
-                  minHeight: '8px',
-                  transition: 'height 0.3s ease'
-                }} />
-                <div style={{
-                  fontSize: '16px',
-                  fontWeight: '700',
-                  color: '#1e293b',
-                  marginTop: '12px',
-                  textAlign: 'center'
-                }}>
-                  {zone}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </div>
-    );
-  };
 
   if (fencers.length === 0) {
     return (
@@ -992,7 +915,7 @@ const MyStatsPage = ({ onBack }) => {
                     bottom: 0,
                     width: '100%',
                     height: `${height}%`,
-                    backgroundColor: zone <= 3 ? '#ef4444' : '#22c55e',
+                    backgroundColor: '#22c55e',
                     borderRadius: '8px 8px 0 0',
                     display: 'flex',
                     alignItems: 'center',
@@ -1038,34 +961,16 @@ const MyStatsPage = ({ onBack }) => {
           backgroundColor: '#f8fafc',
           borderRadius: '8px'
         }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <div style={{
-              width: '20px',
-              height: '20px',
-              backgroundColor: '#ef4444',
-              borderRadius: '4px',
-              border: '2px solid #dc2626'
-            }} />
-            <span style={{ 
-              fontSize: '16px', 
-              fontWeight: '700',
-              color: '#1e293b'
-            }}>Zones 1-3 (Terrain Adverse)</span>
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <div style={{
-              width: '20px',
-              height: '20px',
-              backgroundColor: '#22c55e',
-              borderRadius: '4px',
-              border: '2px solid #16a34a'
-            }} />
-            <span style={{ 
-              fontSize: '16px', 
-              fontWeight: '700',
-              color: '#1e293b'
-            }}>Zones 4-6 (Son Terrain)</span>
-          </div>
+          <span style={{ 
+            fontSize: '16px', 
+            fontWeight: '700',
+            color: '#1e293b'
+          }}>Zones 1-3 (Son Terrain)</span>
+          <span style={{ 
+            fontSize: '16px', 
+            fontWeight: '700',
+            color: '#1e293b'
+          }}>Zones 4-6 (Terrain Adverse)</span>
         </div>
       </div>
     );
@@ -1134,7 +1039,7 @@ const MyStatsPage = ({ onBack }) => {
                     bottom: 0,
                     width: '100%',
                     height: `${height}%`,
-                    backgroundColor: zone <= 3 ? '#ef4444' : '#22c55e',
+                    backgroundColor: '#ef4444',
                     borderRadius: '8px 8px 0 0',
                     display: 'flex',
                     alignItems: 'center',
@@ -1180,34 +1085,16 @@ const MyStatsPage = ({ onBack }) => {
           backgroundColor: '#f8fafc',
           borderRadius: '8px'
         }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <div style={{
-              width: '20px',
-              height: '20px',
-              backgroundColor: '#ef4444',
-              borderRadius: '4px',
-              border: '2px solid #dc2626'
-            }} />
-            <span style={{ 
-              fontSize: '16px', 
-              fontWeight: '700',
-              color: '#1e293b'
-            }}>Zones 1-3 (Terrain Adverse)</span>
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <div style={{
-              width: '20px',
-              height: '20px',
-              backgroundColor: '#22c55e',
-              borderRadius: '4px',
-              border: '2px solid #16a34a'
-            }} />
-            <span style={{ 
-              fontSize: '16px', 
-              fontWeight: '700',
-              color: '#1e293b'
-            }}>Zones 4-6 (Son Terrain)</span>
-          </div>
+          <span style={{ 
+            fontSize: '16px', 
+            fontWeight: '700',
+            color: '#1e293b'
+          }}>Zones 1-3 (Son Terrain)</span>
+          <span style={{ 
+            fontSize: '16px', 
+            fontWeight: '700',
+            color: '#1e293b'
+          }}>Zones 4-6 (Terrain Adverse)</span>
         </div>
       </div>
     );
