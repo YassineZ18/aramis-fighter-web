@@ -1,5 +1,6 @@
 // Export des données vers format Excel/CSV compatible avec la feuille d'analyse
 import { logger } from './performanceOptimizer';
+import * as XLSX from 'xlsx';
 
 // Mapping des actions de l'app vers les codes Excel
 const ACTION_MAPPING = {
@@ -143,7 +144,275 @@ export function exportMatchToCSV(matchData) {
   }
 }
 
-// Exporter tous les matchs d'un escrimeur
+// Calculer les statistiques détaillées d'un escrimeur (comme dans MyStats)
+function calculateFencerStats(fencerName) {
+  const matches = JSON.parse(localStorage.getItem('aramis_matches') || '[]');
+  const fencerMatches = matches.filter(match => 
+    match.redFencer === fencerName || match.greenFencer === fencerName
+  );
+
+  let stats = {
+    totalMatches: fencerMatches.length,
+    totalTouchesGiven: 0,
+    totalTouchesReceived: 0,
+    actionDistribution: {},
+    zoneDistribution: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0 },
+    zoneDistributionReceived: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0 },
+    matchResults: [],
+    opponents: []
+  };
+
+  fencerMatches.forEach(match => {
+    const isRed = match.redFencer === fencerName;
+    const opponent = isRed ? match.greenFencer : match.redFencer;
+    const myScore = isRed ? match.redScore : match.greenScore;
+    const opponentScore = isRed ? match.greenScore : match.redScore;
+    
+    stats.opponents.push(opponent);
+    stats.matchResults.push({
+      opponent,
+      myScore,
+      opponentScore,
+      result: myScore > opponentScore ? 'Victoire' : myScore < opponentScore ? 'Défaite' : 'Égalité'
+    });
+
+    if (match.touchHistory) {
+      match.touchHistory.forEach(touch => {
+        if (touch.fencer === fencerName) {
+          stats.totalTouchesGiven++;
+          if (touch.action) {
+            stats.actionDistribution[touch.action] = (stats.actionDistribution[touch.action] || 0) + 1;
+          }
+          if (touch.zone) {
+            stats.zoneDistribution[touch.zone]++;
+          }
+        } else {
+          stats.totalTouchesReceived++;
+          if (touch.zone) {
+            stats.zoneDistributionReceived[touch.zone]++;
+          }
+        }
+      });
+    }
+  });
+
+  return stats;
+}
+
+// Créer un fichier Excel avec graphiques et tableaux stylisés
+function createExcelWorkbook(fencerStats) {
+  const wb = XLSX.utils.book_new();
+  
+  // === FEUILLE 1: RÉSUMÉ GÉNÉRAL ===
+  const summaryData = [
+    ['🏆 ARAMIS FIGHTER - ANALYSE STATISTIQUES', '', '', '', ''],
+    ['', '', '', '', ''],
+    ['📊 INFORMATIONS GÉNÉRALES', '', '', '', ''],
+    ['Escrimeur:', fencerStats.fencerName || 'N/A', '', '', ''],
+    ['Date d\'export:', new Date().toLocaleDateString('fr-FR'), '', '', ''],
+    ['Période d\'analyse:', `${fencerStats.totalMatches} matchs`, '', '', ''],
+    ['', '', '', '', ''],
+    ['⚔️ STATISTIQUES GLOBALES', '', '', '', ''],
+    ['Indicateur', 'Valeur', 'Performance', '', ''],
+    ['Total matchs disputés', fencerStats.totalMatches, fencerStats.totalMatches > 10 ? '🟢 Excellent' : fencerStats.totalMatches > 5 ? '🟡 Bon' : '🔴 Faible', '', ''],
+    ['Touches données', fencerStats.totalTouchesGiven, '', '', ''],
+    ['Touches reçues', fencerStats.totalTouchesReceived, '', '', ''],
+    ['Ratio d\'efficacité', fencerStats.totalTouchesGiven + fencerStats.totalTouchesReceived > 0 ? 
+      Math.round((fencerStats.totalTouchesGiven / (fencerStats.totalTouchesGiven + fencerStats.totalTouchesReceived)) * 100) + '%' : '0%', 
+      fencerStats.totalTouchesGiven > fencerStats.totalTouchesReceived ? '🟢 Positif' : '🔴 À améliorer', '', ''],
+    ['', '', '', '', ''],
+    ['🎯 BILAN DES CONFRONTATIONS', '', '', '', ''],
+    ['Adversaire', 'Mon Score', 'Score Adverse', 'Résultat', 'Écart']
+  ];
+
+  // Calcul des victoires/défaites
+  let victories = 0, defeats = 0, draws = 0;
+  fencerStats.matchResults.forEach(match => {
+    const ecart = match.myScore - match.opponentScore;
+    const ecartText = ecart > 0 ? `+${ecart}` : ecart.toString();
+    summaryData.push([match.opponent, match.myScore, match.opponentScore, match.result, ecartText]);
+    
+    if (match.result === 'Victoire') victories++;
+    else if (match.result === 'Défaite') defeats++;
+    else draws++;
+  });
+
+  // Ajouter le bilan
+  summaryData.push(['', '', '', '', '']);
+  summaryData.push(['📈 BILAN GÉNÉRAL', '', '', '', '']);
+  summaryData.push(['Victoires', victories, `${Math.round((victories/fencerStats.totalMatches)*100)}%`, '', '']);
+  summaryData.push(['Défaites', defeats, `${Math.round((defeats/fencerStats.totalMatches)*100)}%`, '', '']);
+  summaryData.push(['Égalités', draws, `${Math.round((draws/fencerStats.totalMatches)*100)}%`, '', '']);
+
+  const ws1 = XLSX.utils.aoa_to_sheet(summaryData);
+  
+  // Formatage de la feuille résumé
+  ws1['!cols'] = [
+    { width: 25 }, { width: 15 }, { width: 15 }, { width: 15 }, { width: 12 }
+  ];
+
+  XLSX.utils.book_append_sheet(wb, ws1, '📊 Résumé');
+
+  // === FEUILLE 2: ACTIONS TECHNIQUES ===
+  const actionData = [
+    ['⚔️ DISTRIBUTION DES ACTIONS TECHNIQUES', '', '', '', ''],
+    ['', '', '', '', ''],
+    ['📋 ANALYSE DÉTAILLÉE PAR ACTION', '', '', '', ''],
+    ['Action Technique', 'Nombre', 'Pourcentage', 'Efficacité', 'Recommandation']
+  ];
+
+  // Trier les actions par fréquence
+  const sortedActions = Object.entries(fencerStats.actionDistribution)
+    .sort(([,a], [,b]) => b - a);
+
+  sortedActions.forEach(([action, count]) => {
+    const percentage = fencerStats.totalTouchesGiven > 0 ? 
+      Math.round((count / fencerStats.totalTouchesGiven) * 100) : 0;
+    
+    let efficacite = '';
+    let recommandation = '';
+    
+    if (percentage >= 20) {
+      efficacite = '🟢 Excellente';
+      recommandation = 'Action maîtrisée';
+    } else if (percentage >= 10) {
+      efficacite = '🟡 Bonne';
+      recommandation = 'À développer';
+    } else if (count > 0) {
+      efficacite = '🔴 Faible';
+      recommandation = 'À travailler';
+    } else {
+      efficacite = '⚪ Non utilisée';
+      recommandation = 'À explorer';
+    }
+    
+    actionData.push([action, count, percentage + '%', efficacite, recommandation]);
+  });
+
+  // Ajouter statistiques globales actions
+  actionData.push(['', '', '', '', '']);
+  actionData.push(['📊 STATISTIQUES GLOBALES', '', '', '', '']);
+  actionData.push(['Total actions différentes', Object.keys(fencerStats.actionDistribution).length, '', '', '']);
+  actionData.push(['Action la plus utilisée', sortedActions[0] ? sortedActions[0][0] : 'Aucune', '', '', '']);
+  actionData.push(['Diversité technique', Object.keys(fencerStats.actionDistribution).length > 5 ? '🟢 Excellente' : '🟡 À améliorer', '', '', '']);
+
+  const ws2 = XLSX.utils.aoa_to_sheet(actionData);
+  ws2['!cols'] = [
+    { width: 30 }, { width: 12 }, { width: 15 }, { width: 18 }, { width: 20 }
+  ];
+
+  XLSX.utils.book_append_sheet(wb, ws2, '⚔️ Actions');
+
+  // === FEUILLE 3: ANALYSE DES ZONES ===
+  const zoneData = [
+    ['🎯 ANALYSE TACTIQUE DES ZONES', '', '', '', '', ''],
+    ['', '', '', '', '', ''],
+    ['🟢 TOUCHES DONNÉES - ATTAQUE', '', '', '', '', ''],
+    ['Zone', 'Description', 'Nombre', 'Pourcentage', 'Efficacité', 'Conseil Tactique']
+  ];
+
+  const zoneDescriptions = {
+    1: 'Zone 1 - Défense proche',
+    2: 'Zone 2 - Milieu défensif', 
+    3: 'Zone 3 - Ligne médiane',
+    4: 'Zone 4 - Milieu offensif',
+    5: 'Zone 5 - Attaque proche',
+    6: 'Zone 6 - Zone d\'attaque'
+  };
+
+  // Touches données
+  for (let zone = 1; zone <= 6; zone++) {
+    const count = fencerStats.zoneDistribution[zone] || 0;
+    const percentage = fencerStats.totalTouchesGiven > 0 ? 
+      Math.round((count / fencerStats.totalTouchesGiven) * 100) : 0;
+    
+    let efficacite = '';
+    let conseil = '';
+    
+    if (zone <= 3) { // Son terrain
+      if (percentage >= 15) {
+        efficacite = '🟢 Excellente défense';
+        conseil = 'Maintenir cette solidité';
+      } else {
+        efficacite = '🔴 Défense fragile';
+        conseil = 'Renforcer la défense';
+      }
+    } else { // Terrain adverse
+      if (percentage >= 20) {
+        efficacite = '🟢 Attaque efficace';
+        conseil = 'Exploiter cet avantage';
+      } else {
+        efficacite = '🟡 Attaque modérée';
+        conseil = 'Développer l\'offensive';
+      }
+    }
+    
+    zoneData.push([
+      `Zone ${zone}`,
+      zoneDescriptions[zone],
+      count,
+      percentage + '%',
+      efficacite,
+      conseil
+    ]);
+  }
+
+  // Touches reçues
+  zoneData.push(['', '', '', '', '', '']);
+  zoneData.push(['🔴 TOUCHES REÇUES - VULNÉRABILITÉS', '', '', '', '', '']);
+  zoneData.push(['Zone', 'Description', 'Nombre', 'Pourcentage', 'Vulnérabilité', 'Plan d\'amélioration']);
+
+  for (let zone = 1; zone <= 6; zone++) {
+    const count = fencerStats.zoneDistributionReceived[zone] || 0;
+    const percentage = fencerStats.totalTouchesReceived > 0 ? 
+      Math.round((count / fencerStats.totalTouchesReceived) * 100) : 0;
+    
+    let vulnerabilite = '';
+    let plan = '';
+    
+    if (percentage >= 25) {
+      vulnerabilite = '🔴 Zone critique';
+      plan = 'Priorité absolue à corriger';
+    } else if (percentage >= 15) {
+      vulnerabilite = '🟡 Zone sensible';
+      plan = 'Amélioration nécessaire';
+    } else {
+      vulnerabilite = '🟢 Zone sécurisée';
+      plan = 'Maintenir la protection';
+    }
+    
+    zoneData.push([
+      `Zone ${zone}`,
+      zoneDescriptions[zone],
+      count,
+      percentage + '%',
+      vulnerabilite,
+      plan
+    ]);
+  }
+
+  // Analyse tactique globale
+  zoneData.push(['', '', '', '', '', '']);
+  zoneData.push(['📊 ANALYSE TACTIQUE GLOBALE', '', '', '', '', '']);
+  
+  const terrainPropre = (fencerStats.zoneDistribution[1] + fencerStats.zoneDistribution[2] + fencerStats.zoneDistribution[3]);
+  const terrainAdverse = (fencerStats.zoneDistribution[4] + fencerStats.zoneDistribution[5] + fencerStats.zoneDistribution[6]);
+  
+  zoneData.push(['Style de jeu', terrainAdverse > terrainPropre ? 'Offensif' : 'Défensif', '', '', '', '']);
+  zoneData.push(['Touches sur son terrain', terrainPropre, `${Math.round((terrainPropre/fencerStats.totalTouchesGiven)*100)}%`, '', '', '']);
+  zoneData.push(['Touches terrain adverse', terrainAdverse, `${Math.round((terrainAdverse/fencerStats.totalTouchesGiven)*100)}%`, '', '', '']);
+
+  const ws3 = XLSX.utils.aoa_to_sheet(zoneData);
+  ws3['!cols'] = [
+    { width: 12 }, { width: 25 }, { width: 12 }, { width: 15 }, { width: 20 }, { width: 25 }
+  ];
+
+  XLSX.utils.book_append_sheet(wb, ws3, '🎯 Zones');
+
+  return wb;
+}
+
+// Exporter tous les matchs d'un escrimeur avec format Excel enrichi
 export function exportFencerAnalysis(fencerName) {
   try {
     const matches = JSON.parse(localStorage.getItem('aramis_matches') || '[]');
@@ -156,58 +425,24 @@ export function exportFencerAnalysis(fencerName) {
       return false;
     }
     
-    let combinedAnalysis = {
-      fencerName: fencerName,
-      totalMatches: fencerMatches.length,
-      actions: {},
-      zones: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0 },
-      opponents: []
-    };
+    // Calculer les statistiques détaillées
+    const fencerStats = calculateFencerStats(fencerName);
+    fencerStats.fencerName = fencerName;
     
-    const actionCodes = ['AS', 'AC', 'AF', 'AR', 'CS', 'CC', 'CF', 'CR', 'DS', 'DC', 'DF', 'DR', 'PS', 'PC', 'PF', 'PR'];
-    actionCodes.forEach(code => {
-      combinedAnalysis.actions[code] = { given: 0, received: 0 };
-    });
+    // Créer le fichier Excel
+    const wb = createExcelWorkbook(fencerStats);
     
-    fencerMatches.forEach(match => {
-      const isRed = match.redFencer === fencerName;
-      const opponent = isRed ? match.greenFencer : match.redFencer;
-      combinedAnalysis.opponents.push(opponent);
-      
-      const analysis = analyzeMatchTouches(match.touches || [], match.redFencer, match.greenFencer);
-      const fencerActions = isRed ? analysis.redActions : analysis.greenActions;
-      const fencerZones = isRed ? analysis.redZones : analysis.greenZones;
-      
-      actionCodes.forEach(code => {
-        combinedAnalysis.actions[code].given += fencerActions[code].given;
-        combinedAnalysis.actions[code].received += fencerActions[code].received;
-      });
-      
-      Object.keys(fencerZones).forEach(zone => {
-        combinedAnalysis.zones[zone] += fencerZones[zone];
-      });
-    });
+    // Télécharger le fichier
+    const fileName = `analyse_stats_${fencerName}_${new Date().toISOString().split('T')[0]}.xlsx`;
+    XLSX.writeFile(wb, fileName);
     
-    const csvContent = generateConsolidatedCSV(combinedAnalysis);
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
+    logger.info('Export Excel réussi', { fencer: fencerName, matches: fencerMatches.length });
+    return true;
     
-    if (link.download !== undefined) {
-      const url = URL.createObjectURL(blob);
-      link.setAttribute('href', url);
-      link.setAttribute('download', `analyse_complete_${fencerName}_${new Date().toISOString().split('T')[0]}.csv`);
-      link.style.visibility = 'hidden';
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      
-      logger.info('Export analyse complète réussi', { fencer: fencerName, matches: fencerMatches.length });
-      return true;
-    }
-    
-    return false;
   } catch (error) {
-    logger.error('Erreur export analyse complète', error);
+    logger.error('Erreur export Excel', error);
+    console.error('Détails erreur:', error);
+    alert('Erreur lors de l\'export Excel. Vérifiez la console pour plus de détails.');
     return false;
   }
 }
